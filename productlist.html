@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Management - Admin Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3f37c9;
+            --success-color: #4cc9f0;
+            --danger-color: #f72585;
+            --light-bg: #f8f9fa;
+            --border-color: #dee2e6;
+        }
+        
+        body {
+            background-color: var(--light-bg);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+        }
+        
+        .admin-header {
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 1rem 0;
+            margin-bottom: 2rem;
+        }
+        
+        .content-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            padding: 1.5rem;
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--secondary-color);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .product-table {
+            margin-top: 1.5rem;
+        }
+        
+        .product-img {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+        
+        .action-buttons .btn {
+            margin-right: 0.25rem;
+        }
+        
+        .discount-badge {
+            background-color: var(--success-color);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+        
+        .search-filter {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+        
+        .search-box {
+            width: 300px;
+        }
+        
+        .filter-options {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 5px;
+            color: white;
+            background-color: #28a745;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: none;
+            z-index: 1000;
+        }
+        
+        .notification.error {
+            background-color: #dc3545;
+        }
+        
+        .modal-header {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .modal-footer {
+            background-color: var(--light-bg);
+        }
+        
+        .image-preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .image-preview {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .image-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .image-remove {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #dc3545;
+        }
+        
+        .color-option, .size-option {
+            display: inline-block;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            background-color: white;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        
+        .color-option.selected, .size-option.selected {
+            border-color: var(--primary-color);
+            background-color: rgba(67, 97, 238, 0.1);
+        }
+        
+        .color-option .color-preview {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+            border: 1px solid var(--border-color);
+        }
+        
+        .specification-row {
+            display: flex;
+            margin-bottom: 0.5rem;
+        }
+        
+        .specification-row input {
+            margin-right: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .feature-item input {
+            margin-right: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .feature-item .btn-remove {
+            margin-left: 0.5rem;
+            font-size: 0.8rem;
+        }
+        
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Security: CSRF token included for all forms -->
+    <input type="hidden" id="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+    
+    <div class="admin-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h1 class="h3 mb-0">Admin Panel</h1>
+                </div>
+                <div class="col-md-6 text-end">
+                    <a href="admin-dashboard.html" class="btn btn-outline-primary">Dashboard</a>
+                    <a href="addproduct.html" class="btn btn-primary">Upload Product</a>
+                    <a href="#" class="btn btn-outline-danger">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="content-container">
+            <div class="section-title">
+                <span><i class="bi bi-bag"></i> Product Management</span>
+                <div class="d-flex align-items-center">
+                    <span class="me-3">Total Products: <strong id="productCount">12</strong></span>
+                    <button class="btn btn-sm btn-outline-primary" onclick="refreshProductList()">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Search and Filter Section -->
+            <div class="search-filter">
+                <div class="search-box">
+                    <div class="input-group">
+                        <input type="text" class="form-control" placeholder="Search products..." id="searchInput">
+                        <button class="btn btn-outline-secondary" type="button" id="searchButton">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="filter-options">
+                    <select class="form-select" id="categoryFilter">
+                        <option value="">All Categories</option>
+                        <option value="shirts">Shirts</option>
+                        <option value="pants">Pants</option>
+                        <option value="dresses">Dresses</option>
+                        <option value="accessories">Accessories</option>
+                    </select>
+                    
+                    <select class="form-select" id="statusFilter">
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="out-of-stock">Out of Stock</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Products Table -->
+            <div class="table-responsive product-table">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Image</th>
+                            <th>Product Name</th>
+                            <th>Price</th>
+                            <th>Stock</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productTableBody">
+                        <!-- Products will be loaded here dynamically -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            <div class="pagination-container">
+                <nav aria-label="Product pagination">
+                    <ul class="pagination">
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" tabindex="-1">Previous</a>
+                        </li>
+                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="page-link" href="#">3</a></li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Product Modal -->
+    <div class="modal fade" id="editProductModal" tabindex="-1" aria-labelledby="editProductModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editProductModalLabel">Edit Product</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Security: Form with proper encoding and validation attributes -->
+                    <form id="editProductForm" enctype="multipart/form-data" novalidate>
+                        <!-- Security: Hidden field for product ID -->
+                        <input type="hidden" id="editProductId" name="productId">
+                        
+                        <!-- Basic Information Section -->
+                        <div class="mb-3">
+                            <label for="editProductName" class="form-label">Product Name</label>
+                            <!-- Security: Input with required attribute and pattern validation -->
+                            <input type="text" class="form-control" id="editProductName" name="productName" required 
+                                   pattern="[A-Za-z0-9\s\-_]{3,100}" maxlength="100">
+                            <div class="invalid-feedback">Please provide a valid product name (3-100 characters).</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="editProductDescription" class="form-label">Product Description</label>
+                            <!-- Security: Textarea with maxlength to prevent buffer overflow -->
+                            <textarea class="form-control" id="editProductDescription" name="productDescription" rows="3" 
+                                      maxlength="1000" required></textarea>
+                            <div class="invalid-feedback">Please provide a product description (max 1000 characters).</div>
+                        </div>
+                        
+                        <!-- Images Section -->
+                        <div class="mb-3">
+                            <label class="form-label">Product Images</label>
+                            <div class="image-preview-container" id="editImagePreviewContainer">
+                                <!-- Image previews will be added here dynamically -->
+                            </div>
+                            <div class="mt-2">
+                                <!-- Security: File input with accept attribute to restrict file types -->
+                                <input type="file" class="form-control" id="editProductImages" name="productImages[]" 
+                                       accept="image/jpeg,image/png,image/webp" multiple>
+                                <div class="form-text">Allowed formats: JPG, PNG, WEBP. Max size: 5MB per image.</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Pricing Section -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="editOriginalPrice" class="form-label">Original Price (₹)</label>
+                                <!-- Security: Number input with min and max validation -->
+                                <input type="number" class="form-control" id="editOriginalPrice" name="originalPrice" 
+                                       min="0" step="0.01" required>
+                                <div class="invalid-feedback">Please provide a valid price.</div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="editSalePrice" class="form-label">Sale Price (₹)</label>
+                                <!-- Security: Number input with min and max validation -->
+                                <input type="number" class="form-control" id="editSalePrice" name="salePrice" 
+                                       min="0" step="0.01" required>
+                                <div class="invalid-feedback">Please provide a valid sale price.</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Stock and Status Section -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="editStock" class="form-label">Stock Quantity</label>
+                                <input type="number" class="form-control" id="editStock" name="stock" 
+                                       min="0" required>
+                                <div class="invalid-feedback">Please provide a valid stock quantity.</div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="editStatus" class="form-label">Status</label>
+                                <select class="form-select" id="editStatus" name="status" required>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                    <option value="out-of-stock">Out of Stock</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <!-- Security: Button with CSRF token for form submission -->
+                    <button type="button" class="btn btn-primary" onclick="saveProductChanges()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteConfirmModalLabel">Confirm Deletion</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this product? This action cannot be undone.</p>
+                    <div class="alert alert-warning">
+                        <strong>Product:</strong> <span id="deleteProductName"></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <!-- Security: Button with CSRF token for deletion -->
+                    <button type="button" class="btn btn-danger" id="confirmDeleteButton">Delete Product</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="notification" id="notification"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Sample product data (in a real application, this would come from the server)
+        let products = [
+            {
+                id: 1,
+                name: "Premium Cotton Shirt",
+                description: "Comfortable and stylish shirt made from 100% premium cotton",
+                image: "https://picsum.photos/seed/shirt1/300/300.jpg",
+                originalPrice: 49.99,
+                salePrice: 39.99,
+                stock: 25,
+                status: "active",
+                colors: ["#FF5733", "#33FF57", "#3357FF"],
+                sizes: ["S", "M", "L", "XL"],
+                category: "shirts"
+            },
+            {
+                id: 2,
+                name: "Slim Fit Chinos",
+                description: "Modern slim fit chinos perfect for any occasion",
+                image: "https://picsum.photos/seed/pants1/300/300.jpg",
+                originalPrice: 59.99,
+                salePrice: 49.99,
+                stock: 15,
+                status: "active",
+                colors: ["#000000", "#8B4513", "#4682B4"],
+                sizes: ["30", "32", "34", "36"],
+                category: "pants"
+            },
+            {
+                id: 3,
+                name: "Summer Floral Dress",
+                description: "Light and breezy floral dress for summer days",
+                image: "https://picsum.photos/seed/dress1/300/300.jpg",
+                originalPrice: 69.99,
+                salePrice: 59.99,
+                stock: 0,
+                status: "out-of-stock",
+                colors: ["#FFC0CB", "#9370DB", "#00CED1"],
+                sizes: ["XS", "S", "M"],
+                category: "dresses"
+            },
+            {
+                id: 4,
+                name: "Leather Belt",
+                description: "Genuine leather belt with classic buckle",
+                image: "https://picsum.photos/seed/belt1/300/300.jpg",
+                originalPrice: 29.99,
+                salePrice: 24.99,
+                stock: 40,
+                status: "active",
+                colors: ["#000000", "#8B4513"],
+                sizes: ["S", "M", "L"],
+                category: "accessories"
+            },
+            {
+                id: 5,
+                name: "Casual Polo Shirt",
+                description: "Comfortable polo shirt for everyday wear",
+                image: "https://picsum.photos/seed/polo1/300/300.jpg",
+                originalPrice: 34.99,
+                salePrice: 29.99,
+                stock: 30,
+                status: "active",
+                colors: ["#FFFFFF", "#000000", "#1E90FF"],
+                sizes: ["S", "M", "L", "XL", "XXL"],
+                category: "shirts"
+            }
+        ];
+        
+        // Current product ID for delete operation
+        let currentProductId = null;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load products into table
+            loadProductTable();
+            
+            // Setup search functionality
+            document.getElementById('searchButton').addEventListener('click', searchProducts);
+            document.getElementById('searchInput').addEventListener('keyup', function(event) {
+                if (event.key === 'Enter') {
+                    searchProducts();
+                }
+            });
+            
+            // Setup filter functionality
+            document.getElementById('categoryFilter').addEventListener('change', filterProducts);
+            document.getElementById('statusFilter').addEventListener('change', filterProducts);
+            
+            // Setup edit form image preview
+            document.getElementById('editProductImages').addEventListener('change', handleEditImagePreview);
+            
+            // Setup edit form price calculation
+            document.getElementById('editOriginalPrice').addEventListener('input', calculateEditDiscount);
+            document.getElementById('editSalePrice').addEventListener('input', calculateEditDiscount);
+            
+            // Setup delete confirmation button
+            document.getElementById('confirmDeleteButton').addEventListener('click', deleteProduct);
+        });
+        
+        // Security: Function to load products into the table
+        function loadProductTable() {
+            const tableBody = document.getElementById('productTableBody');
+            tableBody.innerHTML = '';
+            
+            products.forEach(product => {
+                const discount = ((product.originalPrice - product.salePrice) / product.originalPrice * 100).toFixed(0);
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${product.id}</td>
+                    <td><img src="${product.image}" alt="${product.name}" class="product-img"></td>
+                    <td>${product.name}</td>
+                    <td>
+                        <div>$${product.salePrice.toFixed(2)}</div>
+                        <div class="text-muted text-decoration-line-through">$${product.originalPrice.toFixed(2)}</div>
+                        <div class="discount-badge">${discount}% OFF</div>
+                    </td>
+                    <td>${product.stock}</td>
+                    <td>
+                        ${getStatusBadge(product.status)}
+                    </td>
+                    <td class="action-buttons">
+                        <!-- Security: Edit button with proper data attributes -->
+                        <button class="btn btn-sm btn-outline-primary" onclick="editProduct(${product.id})" 
+                                data-product-id="${product.id}">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <!-- Security: Delete button with proper data attributes -->
+                        <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete(${product.id}, '${product.name}')" 
+                                data-product-id="${product.id}">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // Update product count
+            document.getElementById('productCount').textContent = products.length;
+        }
+        
+        // Security: Function to get status badge HTML
+        function getStatusBadge(status) {
+            switch(status) {
+                case 'active':
+                    return '<span class="badge bg-success">Active</span>';
+                case 'inactive':
+                    return '<span class="badge bg-secondary">Inactive</span>';
+                case 'out-of-stock':
+                    return '<span class="badge bg-danger">Out of Stock</span>';
+                default:
+                    return '<span class="badge bg-secondary">Unknown</span>';
+            }
+        }
+        
+        // Security: Function to search products
+        function searchProducts() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            if (searchTerm === '') {
+                loadProductTable();
+                return;
+            }
+            
+            const filteredProducts = products.filter(product => 
+                product.name.toLowerCase().includes(searchTerm) || 
+                product.description.toLowerCase().includes(searchTerm)
+            );
+            
+            displayFilteredProducts(filteredProducts);
+        }
+        
+        // Security: Function to filter products
+        function filterProducts() {
+            const categoryFilter = document.getElementById('categoryFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            
+            let filteredProducts = products;
+            
+            if (categoryFilter !== '') {
+                filteredProducts = filteredProducts.filter(product => product.category === categoryFilter);
+            }
+            
+            if (statusFilter !== '') {
+                filteredProducts = filteredProducts.filter(product => product.status === statusFilter);
+            }
+            
+            displayFilteredProducts(filteredProducts);
+        }
+        
+        // Security: Function to display filtered products
+        function displayFilteredProducts(filteredProducts) {
+            const tableBody = document.getElementById('productTableBody');
+            tableBody.innerHTML = '';
+            
+            if (filteredProducts.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td colspan="7" class="text-center py-4">
+                        <div class="text-muted">
+                            <i class="bi bi-search fs-1"></i>
+                            <p>No products found matching your criteria.</p>
+                        </div>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+                return;
+            }
+            
+            filteredProducts.forEach(product => {
+                const discount = ((product.originalPrice - product.salePrice) / product.originalPrice * 100).toFixed(0);
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${product.id}</td>
+                    <td><img src="${product.image}" alt="${product.name}" class="product-img"></td>
+                    <td>${product.name}</td>
+                    <td>
+                        <div>$${product.salePrice.toFixed(2)}</div>
+                        <div class="text-muted text-decoration-line-through">$${product.originalPrice.toFixed(2)}</div>
+                        <div class="discount-badge">${discount}% OFF</div>
+                    </td>
+                    <td>${product.stock}</td>
+                    <td>
+                        ${getStatusBadge(product.status)}
+                    </td>
+                    <td class="action-buttons">
+                        <button class="btn btn-sm btn-outline-primary" onclick="editProduct(${product.id})" 
+                                data-product-id="${product.id}">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete(${product.id}, '${product.name}')" 
+                                data-product-id="${product.id}">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // Update product count
+            document.getElementById('productCount').textContent = filteredProducts.length;
+        }
+        
+        // Security: Function to edit a product
+        function editProduct(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) {
+                showNotification('Product not found', 'error');
+                return;
+            }
+            
+            // Populate form fields
+            document.getElementById('editProductId').value = product.id;
+            document.getElementById('editProductName').value = product.name;
+            document.getElementById('editProductDescription').value = product.description;
+            document.getElementById('editOriginalPrice').value = product.originalPrice;
+            document.getElementById('editSalePrice').value = product.salePrice;
+            document.getElementById('editStock').value = product.stock;
+            document.getElementById('editStatus').value = product.status;
+            
+            // Populate image previews
+            const imageContainer = document.getElementById('editImagePreviewContainer');
+            imageContainer.innerHTML = '';
+            
+            const imagePreview = document.createElement('div');
+            imagePreview.className = 'image-preview';
+            imagePreview.innerHTML = `
+                <img src="${product.image}" alt="${product.name}">
+            `;
+            imageContainer.appendChild(imagePreview);
+            
+            // Show modal
+            const editModal = new bootstrap.Modal(document.getElementById('editProductModal'));
+            editModal.show();
+        }
+        
+        // Security: Function to handle image preview in edit form
+        function handleEditImagePreview(event) {
+            const files = event.target.files;
+            const previewContainer = document.getElementById('editImagePreviewContainer');
+            
+            // Security: Validate each file
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                
+                // Security: Check file type
+                if (!file.type.match('image.*')) {
+                    showNotification('Only image files are allowed', 'error');
+                    event.target.value = '';
+                    return;
+                }
+                
+                // Security: Check file size (5MB limit)
+                if (file.size > 5 * 1024 * 1024) {
+                    showNotification('Image size should be less than 5MB', 'error');
+                    event.target.value = '';
+                    return;
+                }
+                
+                // Create preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.createElement('div');
+                    preview.className = 'image-preview';
+                    preview.innerHTML = `
+                        <img src="${e.target.result}" alt="Preview">
+                        <div class="image-remove" onclick="removeEditImagePreview(this)">
+                            <i class="bi bi-x"></i>
+                        </div>
+                    `;
+                    previewContainer.appendChild(preview);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        // Security: Function to remove image preview in edit form
+        function removeEditImagePreview(element) {
+            element.parentElement.remove();
+        }
+        
+        // Security: Function to calculate discount in edit form
+        function calculateEditDiscount() {
+            const originalPrice = parseFloat(document.getElementById('editOriginalPrice').value) || 0;
+            const salePrice = parseFloat(document.getElementById('editSalePrice').value) || 0;
+            
+            if (originalPrice > 0 && salePrice > 0 && salePrice < originalPrice) {
+                const discountPercentage = ((originalPrice - salePrice) / originalPrice * 100).toFixed(0);
+                // In a real application, you might display this discount somewhere
+            }
+        }
+        
+        // Security: Function to save product changes
+        function saveProductChanges() {
+            const form = document.getElementById('editProductForm');
+            
+            if (!form.checkValidity()) {
+                form.classList.add('was-validated');
+                return;
+            }
+            
+            // Get form data
+            const productId = parseInt(document.getElementById('editProductId').value);
+            const productName = document.getElementById('editProductName').value;
+            const productDescription = document.getElementById('editProductDescription').value;
+            const originalPrice = parseFloat(document.getElementById('editOriginalPrice').value);
+            const salePrice = parseFloat(document.getElementById('editSalePrice').value);
+            const stock = parseInt(document.getElementById('editStock').value);
+            const status = document.getElementById('editStatus').value;
+            
+            // Security: In a real application, you would send this data to the server via AJAX
+            // with proper CSRF token and server-side validation
+            
+            // Find product index
+            const productIndex = products.findIndex(p => p.id === productId);
+            if (productIndex === -1) {
+                showNotification('Product not found', 'error');
+                return;
+            }
+            
+            // Update product data
+            products[productIndex] = {
+                ...products[productIndex],
+                name: productName,
+                description: productDescription,
+                originalPrice: originalPrice,
+                salePrice: salePrice,
+                stock: stock,
+                status: status
+            };
+            
+            // Close modal
+            const editModal = bootstrap.Modal.getInstance(document.getElementById('editProductModal'));
+            editModal.hide();
+            
+            // Refresh table
+            loadProductTable();
+            
+            // Show success message
+            showNotification('Product updated successfully');
+        }
+        
+        // Security: Function to confirm product deletion
+        function confirmDelete(productId, productName) {
+            currentProductId = productId;
+            document.getElementById('deleteProductName').textContent = productName;
+            
+            const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+            deleteModal.show();
+        }
+        
+        // Security: Function to delete a product
+        function deleteProduct() {
+            if (!currentProductId) {
+                showNotification('Invalid product ID', 'error');
+                return;
+            }
+            
+            // Security: In a real application, you would send a DELETE request to the server
+            // with proper CSRF token and server-side validation
+            
+            // Find product index
+            const productIndex = products.findIndex(p => p.id === currentProductId);
+            if (productIndex === -1) {
+                showNotification('Product not found', 'error');
+                return;
+            }
+            
+            // Remove product
+            products.splice(productIndex, 1);
+            
+            // Close modal
+            const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal'));
+            deleteModal.hide();
+            
+            // Refresh table
+            loadProductTable();
+            
+            // Show success message
+            showNotification('Product deleted successfully');
+            
+            // Reset current product ID
+            currentProductId = null;
+        }
+        
+        // Security: Function to refresh product list
+        function refreshProductList() {
+            // Security: In a real application, you would fetch fresh data from the server
+            
+            // Reset filters
+            document.getElementById('searchInput').value = '';
+            document.getElementById('categoryFilter').value = '';
+            document.getElementById('statusFilter').value = '';
+            
+            // Reload table
+            loadProductTable();
+            
+            // Show notification
+            showNotification('Product list refreshed');
+        }
+        
+        // Security: Function to show notifications
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = 'notification';
+            
+            if (type === 'error') {
+                notification.classList.add('error');
+            }
+            
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
