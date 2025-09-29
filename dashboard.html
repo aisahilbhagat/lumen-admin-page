@@ -416,10 +416,10 @@
             <div class="section-title">
                 <span><i class="bi bi-receipt"></i> Order Management</span>
                 <div class="d-flex align-items-center">
-                    <button class="btn btn-sm btn-outline-primary me-2" onclick="refreshOrderList()">
+                    <button class="btn btn-sm btn-outline-primary me-2" id="refreshButton">
                         <i class="bi bi-arrow-clockwise"></i> Refresh
                     </button>
-                    <button class="btn btn-sm btn-primary" onclick="exportOrders()">
+                    <button class="btn btn-sm btn-primary" id="exportButton">
                         <i class="bi bi-download"></i> Export
                     </button>
                 </div>
@@ -847,11 +847,32 @@
             document.getElementById('statusFilter').addEventListener('change', filterOrders);
             document.getElementById('dateFilter').addEventListener('change', filterOrders);
             
+            // Setup refresh and export buttons
+            document.getElementById('refreshButton').addEventListener('click', refreshOrderList);
+            document.getElementById('exportButton').addEventListener('click', exportOrders);
+            
             // Setup fulfill button in modal
             document.getElementById('modalFulfillButton').addEventListener('click', fulfillOrder);
             
             // Setup logout button
             document.getElementById('logoutButton').addEventListener('click', logout);
+            
+            // Add event delegation for order actions
+            document.getElementById('ordersTableBody').addEventListener('click', function(e) {
+                const target = e.target;
+                
+                // Handle view order details
+                if (target.closest('.view-order-btn')) {
+                    const orderId = target.closest('.view-order-btn').getAttribute('data-order-id');
+                    viewOrderDetails(orderId);
+                }
+                
+                // Handle fulfill order
+                if (target.closest('.fulfill-order-btn')) {
+                    const orderId = target.closest('.fulfill-order-btn').getAttribute('data-order-id');
+                    fulfillOrderDirect(orderId);
+                }
+            });
         }
         
         // SECURITY: Function to handle logout
@@ -906,13 +927,13 @@
                     <td>${getStatusBadge(order.status)}</td>
                     <td class="action-buttons">
                         <!-- Security: View button with proper data attributes -->
-                        <button class="btn btn-sm btn-outline-primary" onclick="viewOrderDetails('${order.id}')" 
+                        <button class="btn btn-sm btn-outline-primary view-order-btn" 
                                 data-order-id="${order.id}">
                             <i class="bi bi-eye"></i>
                         </button>
                         <!-- Security: Fulfill button with proper data attributes -->
                         ${order.status === 'pending' ? `
-                        <button class="btn btn-sm btn-outline-success" onclick="fulfillOrderDirect('${order.id}')" 
+                        <button class="btn btn-sm btn-outline-success fulfill-order-btn" 
                                 data-order-id="${order.id}">
                             <i class="bi bi-check-circle"></i>
                         </button>
@@ -1053,12 +1074,12 @@
                     <td>$${order.total.toFixed(2)}</td>
                     <td>${getStatusBadge(order.status)}</td>
                     <td class="action-buttons">
-                        <button class="btn btn-sm btn-outline-primary" onclick="viewOrderDetails('${order.id}')" 
+                        <button class="btn btn-sm btn-outline-primary view-order-btn" 
                                 data-order-id="${order.id}">
                             <i class="bi bi-eye"></i>
                         </button>
                         ${order.status === 'pending' ? `
-                        <button class="btn btn-sm btn-outline-success" onclick="fulfillOrderDirect('${order.id}')" 
+                        <button class="btn btn-sm btn-outline-success fulfill-order-btn" 
                                 data-order-id="${order.id}">
                             <i class="bi bi-check-circle"></i>
                         </button>
