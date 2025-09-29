@@ -233,15 +233,15 @@
                 </div>
             </div>
             
-            <!-- <div class="mb-3 form-check">
+            <div class="mb-3 form-check">
                 <input type="checkbox" class="form-check-input" id="rememberMe">
                 <label class="form-check-label" for="rememberMe">Remember me</label>
-            </div> -->
+            </div>
             
             <button type="submit" class="btn btn-primary">Login</button>
         </form>
         
-        <!-- <div class="divider">
+        <div class="divider">
             <span>or continue with</span>
         </div>
         
@@ -255,18 +255,16 @@
             <button class="social-btn" title="Login with Twitter" data-provider="twitter">
                 <i class="bi bi-twitter"></i>
             </button>
-        </div> -->
+        </div>
         
-        <!-- <div class="login-footer">
+        <div class="login-footer">
             <p>
-                <!-- This now triggers the password reset flow -->
-                <!-- <a href="#" id="forgotPassword">Forgot password?</a>
+                <a href="#" id="forgotPassword">Forgot password?</a>
             </p>
             <p>
-                <!-- This now triggers the simple sign up flow -->
-                <!-- Don't have an account? <a href="#" id="signUp">Sign up</a>
+                Don't have an account? <a href="#" id="signUp">Sign up</a>
             </p>
-        <!-- </div> --> 
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -280,8 +278,9 @@
         const SUPABASE_URL = 'https://tfcvfjtounqemishwcop.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmY3ZmanRvdW5xZW1pc2h3Y29wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkwNDI4NjgsImV4cCI6MjA3NDYxODg2OH0.Qso906vE1_1LTIxhrKAswHhNsizquQJ8P7X4ybfaXmM';
         
-        // Initialize Supabase Client
-        const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Initialize Supabase Client - FIXED: Using the correct initialization method
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         document.addEventListener('DOMContentLoaded', function() {
             // UI Elements
@@ -322,12 +321,22 @@
                 const email = document.getElementById('username').value;
                 const password = document.getElementById('password').value;
 
+                // Basic validation
+                if (!email || !password) {
+                    showMessage('Please enter both email and password.', true);
+                    return;
+                }
+
                 const loginButton = e.submitter;
                 loginButton.disabled = true;
                 loginButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Logging in...';
                 
                 try {
-                    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                    console.log('Attempting login with:', email);
+                    const { data, error } = await supabaseClient.auth.signInWithPassword({ 
+                        email: email.trim(), 
+                        password: password 
+                    });
                     
                     if (error) {
                         console.error('Login error:', error.message);
@@ -335,7 +344,10 @@
                     } else if (data.user) {
                         // Successful login: Redirect to the protected dashboard
                         showMessage('Login successful! Redirecting...', false);
-                        window.location.href = 'dashboard.html'; 
+                        console.log('Login successful, user:', data.user);
+                        setTimeout(() => {
+                            window.location.href = 'dashboard.html'; 
+                        }, 1500);
                     }
                 } catch (err) {
                     console.error('Network Error:', err);
@@ -349,47 +361,47 @@
             // ----------------------------------------
             // 2. SIGN UP FUNCTIONALITY (Supabase)
             // ----------------------------------------
-            // document.getElementById('signUp').addEventListener('click', async function(e) {
-            //     e.preventDefault();
-            //     // A dedicated sign-up form/page is recommended for production.
-            //     const email = prompt('Enter your email to sign up:');
-            //     const password = prompt('Enter a password (min 6 characters):');
+            document.getElementById('signUp').addEventListener('click', async function(e) {
+                e.preventDefault();
+                // A dedicated sign-up form/page is recommended for production.
+                const email = prompt('Enter your email to sign up:');
+                const password = prompt('Enter a password (min 6 characters):');
 
-            //     if (email && password) {
-            //         const { data, error } = await supabase.auth.signUp({ email, password });
+                if (email && password) {
+                    const { data, error } = await supabaseClient.auth.signUp({ email, password });
 
-            //         if (error) {
-            //             console.error('Sign up failed:', error.message);
-            //             showMessage(`Sign up failed: ${error.message}`, true);
-            //         } else if (data.user) {
-            //             showMessage('Sign up successful! Please check your email to confirm your account.', false);
-            //         }
-            //     } else if (email || password) {
-            //          showMessage('Sign up requires both email and password.', true);
-            //     }
-            // });
+                    if (error) {
+                        console.error('Sign up failed:', error.message);
+                        showMessage(`Sign up failed: ${error.message}`, true);
+                    } else if (data.user) {
+                        showMessage('Sign up successful! Please check your email to confirm your account.', false);
+                    }
+                } else if (email || password) {
+                     showMessage('Sign up requires both email and password.', true);
+                }
+            });
 
             // ----------------------------------------
             // 3. FORGOT PASSWORD FUNCTIONALITY (Supabase)
             // ----------------------------------------
-            // document.getElementById('forgotPassword').addEventListener('click', async function(e) {
-            //     e.preventDefault();
-            //     const email = prompt('Please enter your email address for password reset:');
+            document.getElementById('forgotPassword').addEventListener('click', async function(e) {
+                e.preventDefault();
+                const email = prompt('Please enter your email address for password reset:');
                 
-            //     if (email) {
-            //         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            //             // Redirect user to a specific page after clicking the email link
-            //             redirectTo: window.location.origin + '/dashboard.html', 
-            //         });
+                if (email) {
+                    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+                        // Redirect user to a specific page after clicking the email link
+                        redirectTo: window.location.origin + '/dashboard.html', 
+                    });
 
-            //         if (error) {
-            //             console.error('Password reset error:', error.message);
-            //             showMessage(`Error sending reset link: ${error.message}`, true);
-            //         } else {
-            //             showMessage('Password reset link sent! Check your email.', false);
-            //         }
-            //     }
-            // });
+                    if (error) {
+                        console.error('Password reset error:', error.message);
+                        showMessage(`Error sending reset link: ${error.message}`, true);
+                    } else {
+                        showMessage('Password reset link sent! Check your email.', false);
+                    }
+                }
+            });
             
             // ----------------------------------------
             // 4. SOCIAL LOGIN FUNCTIONALITY (Supabase)
@@ -398,7 +410,7 @@
                 button.addEventListener('click', async function() {
                     const platform = this.getAttribute('data-provider'); 
                     
-                    const { error } = await supabase.auth.signInWithOAuth({
+                    const { error } = await supabaseClient.auth.signInWithOAuth({
                         provider: platform,
                         options: {
                             redirectTo: window.location.origin + '/dashboard.html',
@@ -414,7 +426,7 @@
             });
             
             // Check for active session on load (if user clicks back/reloads login page)
-            supabase.auth.getSession().then(({ data: { session } }) => {
+            supabaseClient.auth.getSession().then(({ data: { session } }) => {
                 if (session) {
                     // Redirect immediately if already authenticated
                     window.location.href = 'dashboard.html';
