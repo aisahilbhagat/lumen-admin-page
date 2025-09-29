@@ -6,7 +6,9 @@ const SUPABASE_URL = 'https://tfcvfjtounqemishwcop.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmY3ZmanRvdW5xZW1pc2h3Y29wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkwNDI4NjgsImV4cCI6MjA3NDYxODg2OH0.Qso906vE1_1LTIxhrKAswHhNsizquQJ8P7X4ybfaXmM';
 
 // create Supabase client (using global Supabase from CDN)
-const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// CORRECT — when you load the CDN script <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 
 // Sample order data (kept as dummy data until server is integrated)
 let orders = [
