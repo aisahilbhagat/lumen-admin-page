@@ -1,19 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Order Management - Admin Dashboard</title>
-    <!-- SECURITY: Add Content Security Policy meta tag as fallback -->
+
+    <!-- SECURITY: CSP meta fallback (keep in sync with server response headers if possible) -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; 
                 script-src 'self' https://cdn.jsdelivr.net https://cdn.supabase.io; 
                 style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; 
                 font-src 'self' https://cdn.jsdelivr.net; 
                 img-src 'self' data: https:; 
                 connect-src 'self' https://*.supabase.co wss://*.supabase.co;">
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
     <style>
+        /* (unchanged — kept inline for convenience; move to external CSS later to tighten CSP) */
         :root {
             --primary-color: #4361ee;
             --secondary-color: #3f37c9;
@@ -22,345 +26,69 @@
             --light-bg: #f8f9fa;
             --border-color: #dee2e6;
         }
-        
-        body {
-            background-color: var(--light-bg);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #333;
-        }
-        
-        .admin-header {
-            background-color: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            padding: 1rem 0;
-            margin-bottom: 2rem;
-        }
-        
-        .dashboard-container {
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        
-        .section-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: var(--secondary-color);
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        
-        .stats-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        
-        .stat-card {
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            padding: 1.5rem;
-            display: flex;
-            align-items: center;
-        }
-        
-        .stat-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 1rem;
-            font-size: 1.5rem;
-        }
-        
-        .stat-icon.primary {
-            background-color: rgba(67, 97, 238, 0.1);
-            color: var(--primary-color);
-        }
-        
-        .stat-icon.success {
-            background-color: rgba(76, 201, 240, 0.1);
-            color: var(--success-color);
-        }
-        
-        .stat-icon.danger {
-            background-color: rgba(247, 37, 133, 0.1);
-            color: var(--danger-color);
-        }
-        
-        .stat-info h3 {
-            font-size: 1.75rem;
-            margin-bottom: 0.25rem;
-        }
-        
-        .stat-info p {
-            margin: 0;
-            color: #6c757d;
-        }
-        
-        .orders-table {
-            margin-top: 1.5rem;
-        }
-        
-        .order-id {
-            font-weight: 600;
-            color: var(--primary-color);
-        }
-        
-        .customer-info {
-            display: flex;
-            align-items: center;
-        }
-        
-        .customer-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background-color: var(--primary-color);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 0.75rem;
-            font-weight: 600;
-        }
-        
-        .customer-details h6 {
-            margin-bottom: 0.1rem;
-        }
-        
-        .customer-details small {
-            color: #6c757d;
-        }
-        
-        .address-info {
-            max-width: 250px;
-        }
-        
-        .status-badge {
-            font-size: 0.75rem;
-            padding: 0.35rem 0.65rem;
-        }
-        
-        .action-buttons .btn {
-            margin-right: 0.25rem;
-        }
-        
-        .search-filter {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 1.5rem;
-        }
-        
-        .search-box {
-            width: 300px;
-        }
-        
-        .filter-options {
-            display: flex;
-            gap: 1rem;
-        }
-        
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 1rem 1.5rem;
-            border-radius: 5px;
-            color: white;
-            background-color: #28a745;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            display: none;
-            z-index: 1000;
-        }
-        
-        .notification.error {
-            background-color: #dc3545;
-        }
-        
-        .order-details-modal .modal-header {
-            background-color: var(--primary-color);
-            color: white;
-        }
-        
-        .order-details-modal .modal-footer {
-            background-color: var(--light-bg);
-        }
-        
-        .detail-row {
-            display: flex;
-            margin-bottom: 0.75rem;
-        }
-        
-        .detail-label {
-            font-weight: 600;
-            width: 150px;
-        }
-        
-        .detail-value {
-            flex: 1;
-        }
-        
-        .product-item {
-            display: flex;
-            margin-bottom: 1.5rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        .product-item:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-            padding-bottom: 0;
-        }
-        
-        .product-image {
-            width: 120px;
-            height: 120px;
-            object-fit: cover;
-            border-radius: 8px;
-            margin-right: 1.5rem;
-        }
-        
-        .product-info {
-            flex: 1;
-        }
-        
-        .product-info h6 {
-            margin-bottom: 0.5rem;
-            font-size: 1.2rem;
-            color: var(--secondary-color);
-        }
-        
-        .product-price {
-            font-weight: 600;
-            color: var(--primary-color);
-            font-size: 1.1rem;
-        }
-        
-        .product-attributes {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            margin-top: 0.75rem;
-        }
-        
-        .product-attribute {
-            display: flex;
-            flex-direction: column;
-            min-width: 100px;
-        }
-        
-        .attribute-label {
-            font-size: 0.85rem;
-            color: #6c757d;
-            margin-bottom: 0.25rem;
-        }
-        
-        .attribute-value {
-            font-weight: 500;
-            font-size: 1rem;
-        }
-        
-        .color-badge {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            margin-right: 5px;
-            vertical-align: middle;
-            border: 1px solid #ddd;
-        }
-        
-        .pagination-container {
-            display: flex;
-            justify-content: center;
-            margin-top: 2rem;
-        }
-        
-        .form-check-input:checked {
-            background-color: var(--success-color);
-            border-color: var(--success-color);
-        }
-        
-        .order-summary {
-            background-color: var(--light-bg);
-            border-radius: 8px;
-            padding: 1rem;
-        }
-        
-        .summary-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 0.5rem;
-        }
-        
-        .summary-row.total {
-            font-weight: 600;
-            font-size: 1.1rem;
-            border-top: 1px solid var(--border-color);
-            padding-top: 0.5rem;
-            margin-top: 0.5rem;
-        }
-        
-        .product-total {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            justify-content: center;
-        }
-        
-        .product-quantity {
-            font-size: 1rem;
-            color: #495057;
-            margin-top: 0.5rem;
-        }
-        
-        .product-description {
-            margin-top: 0.75rem;
-            font-size: 0.9rem;
-            line-height: 1.5;
-            color: #495057;
-        }
-        
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(255, 255, 255, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-        }
-        
-        .loading-spinner {
-            width: 3rem;
-            height: 3rem;
-        }
+        body { background-color: var(--light-bg); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; }
+        .admin-header { background-color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 1rem 0; margin-bottom: 2rem; }
+        .dashboard-container { background-color: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); padding: 1.5rem; margin-bottom: 2rem; }
+        .section-title { font-size: 1.5rem; font-weight: 600; color: var(--secondary-color); margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; }
+        .stats-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .stat-card { background-color: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); padding: 1.5rem; display: flex; align-items: center; }
+        .stat-icon { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 1rem; font-size: 1.5rem; }
+        .stat-icon.primary { background-color: rgba(67, 97, 238, 0.1); color: var(--primary-color); }
+        .stat-icon.success { background-color: rgba(76, 201, 240, 0.1); color: var(--success-color); }
+        .stat-icon.danger { background-color: rgba(247, 37, 133, 0.1); color: var(--danger-color); }
+        .stat-info h3 { font-size: 1.75rem; margin-bottom: 0.25rem; }
+        .stat-info p { margin: 0; color: #6c757d; }
+        .orders-table { margin-top: 1.5rem; }
+        .order-id { font-weight: 600; color: var(--primary-color); }
+        .customer-info { display: flex; align-items: center; }
+        .customer-avatar { width: 40px; height: 40px; border-radius: 50%; background-color: var(--primary-color); color: white; display: flex; align-items: center; justify-content: center; margin-right: 0.75rem; font-weight: 600; }
+        .customer-details h6 { margin-bottom: 0.1rem; }
+        .customer-details small { color: #6c757d; }
+        .address-info { max-width: 250px; }
+        .status-badge { font-size: 0.75rem; padding: 0.35rem 0.65rem; }
+        .action-buttons .btn { margin-right: 0.25rem; }
+        .search-filter { display: flex; justify-content: space-between; margin-bottom: 1.5rem; }
+        .search-box { width: 300px; }
+        .filter-options { display: flex; gap: 1rem; }
+        .notification { position: fixed; top: 20px; right: 20px; padding: 1rem 1.5rem; border-radius: 5px; color: white; background-color: #28a745; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; z-index: 1000; }
+        .notification.error { background-color: #dc3545; }
+        .order-details-modal .modal-header { background-color: var(--primary-color); color: white; }
+        .order-details-modal .modal-footer { background-color: var(--light-bg); }
+        .detail-row { display: flex; margin-bottom: 0.75rem; }
+        .detail-label { font-weight: 600; width: 150px; }
+        .detail-value { flex: 1; }
+        .product-item { display: flex; margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); }
+        .product-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .product-image { width: 120px; height: 120px; object-fit: cover; border-radius: 8px; margin-right: 1.5rem; }
+        .product-info { flex: 1; }
+        .product-info h6 { margin-bottom: 0.5rem; font-size: 1.2rem; color: var(--secondary-color); }
+        .product-price { font-weight: 600; color: var(--primary-color); font-size: 1.1rem; }
+        .product-attributes { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 0.75rem; }
+        .product-attribute { display: flex; flex-direction: column; min-width: 100px; }
+        .attribute-label { font-size: 0.85rem; color: #6c757d; margin-bottom: 0.25rem; }
+        .attribute-value { font-weight: 500; font-size: 1rem; }
+        .color-badge { display: inline-block; width: 20px; height: 20px; border-radius: 50%; margin-right: 5px; vertical-align: middle; border: 1px solid #ddd; }
+        .pagination-container { display: flex; justify-content: center; margin-top: 2rem; }
+        .form-check-input:checked { background-color: var(--success-color); border-color: var(--success-color); }
+        .order-summary { background-color: var(--light-bg); border-radius: 8px; padding: 1rem; }
+        .summary-row { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
+        .summary-row.total { font-weight: 600; font-size: 1.1rem; border-top: 1px solid var(--border-color); padding-top: 0.5rem; margin-top: 0.5rem; }
+        .product-total { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; }
+        .product-quantity { font-size: 1rem; color: #495057; margin-top: 0.5rem; }
+        .product-description { margin-top: 0.75rem; font-size: 0.9rem; line-height: 1.5; color: #495057; }
+        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.8); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .loading-spinner { width: 3rem; height: 3rem; }
     </style>
 </head>
 <body>
-    <!-- Loading overlay for authentication check -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="spinner-border text-primary loading-spinner" role="status">
             <span class="visually-hidden">Loading...</span>
         </div>
     </div>
-    
-    <!-- Security: CSRF token included for all forms -->
+
     <input type="hidden" id="csrf_token" value="">
-    
+
     <div class="admin-header" id="adminHeader" style="display: none;">
         <div class="container">
             <div class="row align-items-center">
@@ -378,54 +106,49 @@
     </div>
 
     <div class="container" id="dashboardContent" style="display: none;">
-        <!-- Stats Cards -->
         <div class="stats-container">
             <div class="stat-card">
                 <div class="stat-icon primary">
                     <i class="bi bi-cart-check"></i>
                 </div>
                 <div class="stat-info">
-                    <h3 id="totalOrders">24</h3>
+                    <h3 id="totalOrders">0</h3>
                     <p>Total Orders</p>
                 </div>
             </div>
-            
             <div class="stat-card">
                 <div class="stat-icon success">
                     <i class="bi bi-truck"></i>
                 </div>
                 <div class="stat-info">
-                    <h3 id="fulfilledOrders">18</h3>
+                    <h3 id="fulfilledOrders">0</h3>
                     <p>Fulfilled Orders</p>
                 </div>
             </div>
-            
             <div class="stat-card">
                 <div class="stat-icon danger">
                     <i class="bi bi-clock-history"></i>
                 </div>
                 <div class="stat-info">
-                    <h3 id="pendingOrders">6</h3>
+                    <h3 id="pendingOrders">0</h3>
                     <p>Pending Orders</p>
                 </div>
             </div>
         </div>
-        
-        <!-- Orders Section -->
+
         <div class="dashboard-container">
             <div class="section-title">
                 <span><i class="bi bi-receipt"></i> Order Management</span>
                 <div class="d-flex align-items-center">
-                    <button class="btn btn-sm btn-outline-primary me-2" onclick="refreshOrderList()">
+                    <button id="refreshButton" class="btn btn-sm btn-outline-primary me-2">
                         <i class="bi bi-arrow-clockwise"></i> Refresh
                     </button>
-                    <button class="btn btn-sm btn-primary" onclick="exportOrders()">
+                    <button id="exportButton" class="btn btn-sm btn-primary">
                         <i class="bi bi-download"></i> Export
                     </button>
                 </div>
             </div>
-            
-            <!-- Search and Filter Section -->
+
             <div class="search-filter">
                 <div class="search-box">
                     <div class="input-group">
@@ -435,14 +158,14 @@
                         </button>
                     </div>
                 </div>
-                
+
                 <div class="filter-options">
                     <select class="form-select" id="statusFilter">
                         <option value="">All Status</option>
                         <option value="pending">Pending</option>
                         <option value="fulfilled">Fulfilled</option>
                     </select>
-                    
+
                     <select class="form-select" id="dateFilter">
                         <option value="">All Dates</option>
                         <option value="today">Today</option>
@@ -451,8 +174,7 @@
                     </select>
                 </div>
             </div>
-            
-            <!-- Orders Table -->
+
             <div class="table-responsive orders-table">
                 <table class="table table-hover">
                     <thead>
@@ -467,12 +189,11 @@
                         </tr>
                     </thead>
                     <tbody id="ordersTableBody">
-                        <!-- Orders will be loaded here dynamically -->
+                        <!-- Orders will be loaded here dynamically by dashboard.js -->
                     </tbody>
                 </table>
             </div>
-            
-            <!-- Pagination -->
+
             <div class="pagination-container">
                 <nav aria-label="Orders pagination">
                     <ul class="pagination">
@@ -490,13 +211,12 @@
             </div>
         </div>
     </div>
-    
-    <!-- Order Details Modal -->
+
     <div class="modal fade order-details-modal" id="orderDetailsModal" tabindex="-1" aria-labelledby="orderDetailsModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="orderDetailsModalLabel">Order Details</h5>
+                    <h5 class="modal-title">Order Details</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -520,7 +240,7 @@
                                 <div class="detail-value" id="modalCustomerAltPhone"></div>
                             </div>
                         </div>
-                        
+
                         <div class="col-md-6">
                             <h6 class="mb-3">Delivery Address</h6>
                             <div class="detail-row">
@@ -549,14 +269,12 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <hr class="my-4">
-                    
+
                     <h6 class="mb-3">Order Items</h6>
-                    <div id="modalOrderItems">
-                        <!-- Order items will be loaded here dynamically -->
-                    </div>
-                    
+                    <div id="modalOrderItems"></div>
+
                     <div class="order-summary mt-4">
                         <div class="summary-row">
                             <div>Subtotal:</div>
@@ -578,7 +296,6 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <!-- Security: Button with CSRF token for order fulfillment -->
                     <button type="button" class="btn btn-success" id="modalFulfillButton">
                         <i class="bi bi-check-circle"></i> Mark as Fulfilled
                     </button>
@@ -586,667 +303,14 @@
             </div>
         </div>
     </div>
-    
+
     <div class="notification" id="notification"></div>
 
+    <!-- External JS allowed by CSP because it's 'self' or from whitelisted CDNs -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Supabase Client Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        // SECURITY: Initialize Supabase Client with same credentials as login page
-        const SUPABASE_URL = 'https://tfcvfjtounqemishwcop.supabase.co'; 
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmY3ZmanRvdW5xZW1pc2h3Y29wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkwNDI4NjgsImV4cCI6MjA3NDYxODg2OH0.Qso906vE1_1LTIxhrKAswHhNsizquQJ8P7X4ybfaXmM';
-        
-        // Initialize Supabase Client
-        const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
-        // Sample order data (in a real application, this would come from the server)
-        let orders = [
-            {
-                id: "ORD-2023-001",
-                customer: {
-                    name: "Rajesh Kumar",
-                    email: "rajesh.kumar@example.com",
-                    phone: "9876543210",
-                    altPhone: "8765432109"
-                },
-                deliveryAddress: {
-                    address: "123, Street Name, Apartment 4B",
-                    landmark: "Near City Mall",
-                    city: "Mumbai",
-                    state: "Maharashtra",
-                    pinCode: "400001"
-                },
-                orderDate: "2023-10-15",
-                items: [
-                    {
-                        id: 1,
-                        name: "Premium Cotton Shirt",
-                        category: "Shirts",
-                        size: "L",
-                        color: "Blue",
-                        colorCode: "#1e40af",
-                        material: "100% Cotton",
-                        brand: "Premium Wear",
-                        image: "https://picsum.photos/seed/shirt1/300/300.jpg",
-                        price: 39.99,
-                        quantity: 2
-                    },
-                    {
-                        id: 4,
-                        name: "Leather Belt",
-                        category: "Accessories",
-                        size: "One Size",
-                        color: "Black",
-                        colorCode: "#000000",
-                        material: "Genuine Leather",
-                        brand: "LeatherCraft",
-                        image: "https://picsum.photos/seed/belt1/300/300.jpg",
-                        price: 24.99,
-                        quantity: 1
-                    }
-                ],
-                subtotal: 104.97,
-                shipping: 10.00,
-                tax: 11.55,
-                total: 126.52,
-                status: "pending"
-            },
-            {
-                id: "ORD-2023-002",
-                customer: {
-                    name: "Priya Sharma",
-                    email: "priya.sharma@example.com",
-                    phone: "9988776655",
-                    altPhone: ""
-                },
-                deliveryAddress: {
-                    address: "456, Park Avenue, 2nd Floor",
-                    landmark: "Opposite Railway Station",
-                    city: "Delhi",
-                    state: "Delhi",
-                    pinCode: "110001"
-                },
-                orderDate: "2023-10-14",
-                items: [
-                    {
-                        id: 3,
-                        name: "Summer Floral Dress",
-                        category: "Dresses",
-                        size: "M",
-                        color: "Multi-color",
-                        colorCode: "#ec4899",
-                        material: "100% Polyester",
-                        brand: "Summer Breeze",
-                        image: "https://picsum.photos/seed/dress1/300/300.jpg",
-                        price: 59.99,
-                        quantity: 1
-                    }
-                ],
-                subtotal: 59.99,
-                shipping: 10.00,
-                tax: 6.60,
-                total: 76.59,
-                status: "fulfilled"
-            },
-            {
-                id: "ORD-2023-003",
-                customer: {
-                    name: "Amit Patel",
-                    email: "amit.patel@example.com",
-                    phone: "9123456789",
-                    altPhone: "9012345678"
-                },
-                deliveryAddress: {
-                    address: "789, Gandhi Road, House No. 15",
-                    landmark: "Behind Temple",
-                    city: "Ahmedabad",
-                    state: "Gujarat",
-                    pinCode: "380001"
-                },
-                orderDate: "2023-10-13",
-                items: [
-                    {
-                        id: 2,
-                        name: "Slim Fit Chinos",
-                        category: "Pants",
-                        size: "34",
-                        color: "Khaki",
-                        colorCode: "#d4a574",
-                        material: "98% Cotton, 2% Elastane",
-                        brand: "Comfort Fit",
-                        image: "https://picsum.photos/seed/pants1/300/300.jpg",
-                        price: 49.99,
-                        quantity: 1
-                    },
-                    {
-                        id: 5,
-                        name: "Casual Polo Shirt",
-                        category: "Shirts",
-                        size: "L",
-                        color: "Navy Blue",
-                        colorCode: "#1e3a8a",
-                        material: "100% Pique Cotton",
-                        brand: "Casual Wear",
-                        image: "https://picsum.photos/seed/polo1/300/300.jpg",
-                        price: 29.99,
-                        quantity: 3
-                    }
-                ],
-                subtotal: 139.96,
-                shipping: 10.00,
-                tax: 15.50,
-                total: 165.46,
-                status: "pending"
-            },
-            {
-                id: "ORD-2023-004",
-                customer: {
-                    name: "Sneha Reddy",
-                    email: "sneha.reddy@example.com",
-                    phone: "9876543210",
-                    altPhone: ""
-                },
-                deliveryAddress: {
-                    address: "321, Tech Park, Building C",
-                    landmark: "Near IT Hub",
-                    city: "Bangalore",
-                    state: "Karnataka",
-                    pinCode: "560001"
-                },
-                orderDate: "2023-10-12",
-                items: [
-                    {
-                        id: 1,
-                        name: "Premium Cotton Shirt",
-                        category: "Shirts",
-                        size: "M",
-                        color: "White",
-                        colorCode: "#ffffff",
-                        material: "100% Cotton",
-                        brand: "Premium Wear",
-                        image: "https://picsum.photos/seed/shirt1/300/300.jpg",
-                        price: 39.99,
-                        quantity: 1
-                    },
-                    {
-                        id: 2,
-                        name: "Slim Fit Chinos",
-                        category: "Pants",
-                        size: "32",
-                        color: "Black",
-                        colorCode: "#000000",
-                        material: "98% Cotton, 2% Elastane",
-                        brand: "Comfort Fit",
-                        image: "https://picsum.photos/seed/pants1/300/300.jpg",
-                        price: 49.99,
-                        quantity: 1
-                    }
-                ],
-                subtotal: 89.98,
-                shipping: 10.00,
-                tax: 9.90,
-                total: 109.88,
-                status: "fulfilled"
-            }
-        ];
-        
-        // Current order ID for operations
-        let currentOrderId = null;
-        
-        // SECURITY: Function to check authentication status
-        async function checkAuthStatus() {
-            try {
-                const { data: { session }, error } = await supabase.auth.getSession();
-                
-                if (error) {
-                    console.error('Auth check error:', error.message);
-                    redirectToLogin();
-                    return;
-                }
-                
-                if (!session) {
-                    console.log('No active session found');
-                    redirectToLogin();
-                    return;
-                }
-                
-                // User is authenticated, show dashboard
-                showDashboard();
-                
-            } catch (err) {
-                console.error('Auth check failed:', err);
-                redirectToLogin();
-            }
-        }
-        
-        // SECURITY: Function to redirect to login page
-        function redirectToLogin() {
-            window.location.href = 'index.html';
-        }
-        
-        // SECURITY: Function to show dashboard content
-        function showDashboard() {
-            document.getElementById('loadingOverlay').style.display = 'none';
-            document.getElementById('adminHeader').style.display = 'block';
-            document.getElementById('dashboardContent').style.display = 'block';
-            
-            // Load orders into table
-            loadOrderTable();
-            updateStats();
-            
-            // Setup search functionality
-            document.getElementById('searchButton').addEventListener('click', searchOrders);
-            document.getElementById('searchInput').addEventListener('keyup', function(event) {
-                if (event.key === 'Enter') {
-                    searchOrders();
-                }
-            });
-            
-            // Setup filter functionality
-            document.getElementById('statusFilter').addEventListener('change', filterOrders);
-            document.getElementById('dateFilter').addEventListener('change', filterOrders);
-            
-            // Setup fulfill button in modal
-            document.getElementById('modalFulfillButton').addEventListener('click', fulfillOrder);
-            
-            // Setup logout button
-            document.getElementById('logoutButton').addEventListener('click', logout);
-        }
-        
-        // SECURITY: Function to handle logout
-        async function logout() {
-            try {
-                const { error } = await supabase.auth.signOut();
-                
-                if (error) {
-                    console.error('Logout error:', error.message);
-                    showNotification('Logout failed: ' + error.message, 'error');
-                    return;
-                }
-                
-                // Redirect to login page after successful logout
-                redirectToLogin();
-                
-            } catch (err) {
-                console.error('Logout failed:', err);
-                showNotification('Logout failed', 'error');
-            }
-        }
-        
-        // SECURITY: Function to load orders into the table
-        function loadOrderTable() {
-            const tableBody = document.getElementById('ordersTableBody');
-            tableBody.innerHTML = '';
-            
-            orders.forEach(order => {
-                const customerInitials = order.customer.name.split(' ').map(n => n[0]).join('');
-                
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td class="order-id">${order.id}</td>
-                    <td>
-                        <div class="customer-info">
-                            <div class="customer-avatar">${customerInitials}</div>
-                            <div class="customer-details">
-                                <h6>${order.customer.name}</h6>
-                                <small>${order.customer.email}</small>
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="address-info">
-                            <div>${order.deliveryAddress.address}</div>
-                            <div>${order.deliveryAddress.city}, ${order.deliveryAddress.state}</div>
-                            <div>${order.deliveryAddress.pinCode}</div>
-                        </div>
-                    </td>
-                    <td>${formatDate(order.orderDate)}</td>
-                    <td>$${order.total.toFixed(2)}</td>
-                    <td>${getStatusBadge(order.status)}</td>
-                    <td class="action-buttons">
-                        <!-- Security: View button with proper data attributes -->
-                        <button class="btn btn-sm btn-outline-primary" onclick="viewOrderDetails('${order.id}')" 
-                                data-order-id="${order.id}">
-                            <i class="bi bi-eye"></i>
-                        </button>
-                        <!-- Security: Fulfill button with proper data attributes -->
-                        ${order.status === 'pending' ? `
-                        <button class="btn btn-sm btn-outline-success" onclick="fulfillOrderDirect('${order.id}')" 
-                                data-order-id="${order.id}">
-                            <i class="bi bi-check-circle"></i>
-                        </button>
-                        ` : ''}
-                    </td>
-                `;
-                tableBody.appendChild(row);
-            });
-        }
-        
-        // Security: Function to get status badge HTML
-        function getStatusBadge(status) {
-            switch(status) {
-                case 'pending':
-                    return '<span class="badge bg-warning text-dark">Pending</span>';
-                case 'fulfilled':
-                    return '<span class="badge bg-success">Fulfilled</span>';
-                default:
-                    return '<span class="badge bg-secondary">Unknown</span>';
-            }
-        }
-        
-        // Security: Function to format date
-        function formatDate(dateString) {
-            const options = { year: 'numeric', month: 'short', day: 'numeric' };
-            return new Date(dateString).toLocaleDateString(undefined, options);
-        }
-        
-        // Security: Function to update statistics
-        function updateStats() {
-            const totalOrders = orders.length;
-            const fulfilledOrders = orders.filter(order => order.status === 'fulfilled').length;
-            const pendingOrders = orders.filter(order => order.status === 'pending').length;
-            
-            document.getElementById('totalOrders').textContent = totalOrders;
-            document.getElementById('fulfilledOrders').textContent = fulfilledOrders;
-            document.getElementById('pendingOrders').textContent = pendingOrders;
-        }
-        
-        // Security: Function to search orders
-        function searchOrders() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            
-            if (searchTerm === '') {
-                loadOrderTable();
-                return;
-            }
-            
-            const filteredOrders = orders.filter(order => 
-                order.id.toLowerCase().includes(searchTerm) || 
-                order.customer.name.toLowerCase().includes(searchTerm) || 
-                order.customer.email.toLowerCase().includes(searchTerm) ||
-                order.deliveryAddress.city.toLowerCase().includes(searchTerm) ||
-                order.deliveryAddress.state.toLowerCase().includes(searchTerm)
-            );
-            
-            displayFilteredOrders(filteredOrders);
-        }
-        
-        // Security: Function to filter orders
-        function filterOrders() {
-            const statusFilter = document.getElementById('statusFilter').value;
-            const dateFilter = document.getElementById('dateFilter').value;
-            
-            let filteredOrders = orders;
-            
-            if (statusFilter !== '') {
-                filteredOrders = filteredOrders.filter(order => order.status === statusFilter);
-            }
-            
-            if (dateFilter !== '') {
-                const today = new Date();
-                const filterDate = new Date();
-                
-                switch(dateFilter) {
-                    case 'today':
-                        filterDate.setDate(today.getDate());
-                        break;
-                    case 'week':
-                        filterDate.setDate(today.getDate() - 7);
-                        break;
-                    case 'month':
-                        filterDate.setMonth(today.getMonth() - 1);
-                        break;
-                }
-                
-                filteredOrders = filteredOrders.filter(order => {
-                    const orderDate = new Date(order.orderDate);
-                    return orderDate >= filterDate;
-                });
-            }
-            
-            displayFilteredOrders(filteredOrders);
-        }
-        
-        // Security: Function to display filtered orders
-        function displayFilteredOrders(filteredOrders) {
-            const tableBody = document.getElementById('ordersTableBody');
-            tableBody.innerHTML = '';
-            
-            if (filteredOrders.length === 0) {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td colspan="7" class="text-center py-4">
-                        <div class="text-muted">
-                            <i class="bi bi-search fs-1"></i>
-                            <p>No orders found matching your criteria.</p>
-                        </div>
-                    </td>
-                `;
-                tableBody.appendChild(row);
-                return;
-            }
-            
-            filteredOrders.forEach(order => {
-                const customerInitials = order.customer.name.split(' ').map(n => n[0]).join('');
-                
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td class="order-id">${order.id}</td>
-                    <td>
-                        <div class="customer-info">
-                            <div class="customer-avatar">${customerInitials}</div>
-                            <div class="customer-details">
-                                <h6>${order.customer.name}</h6>
-                                <small>${order.customer.email}</small>
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="address-info">
-                            <div>${order.deliveryAddress.address}</div>
-                            <div>${order.deliveryAddress.city}, ${order.deliveryAddress.state}</div>
-                            <div>${order.deliveryAddress.pinCode}</div>
-                        </div>
-                    </td>
-                    <td>${formatDate(order.orderDate)}</td>
-                    <td>$${order.total.toFixed(2)}</td>
-                    <td>${getStatusBadge(order.status)}</td>
-                    <td class="action-buttons">
-                        <button class="btn btn-sm btn-outline-primary" onclick="viewOrderDetails('${order.id}')" 
-                                data-order-id="${order.id}">
-                            <i class="bi bi-eye"></i>
-                        </button>
-                        ${order.status === 'pending' ? `
-                        <button class="btn btn-sm btn-outline-success" onclick="fulfillOrderDirect('${order.id}')" 
-                                data-order-id="${order.id}">
-                            <i class="bi bi-check-circle"></i>
-                        </button>
-                        ` : ''}
-                    </td>
-                `;
-                tableBody.appendChild(row);
-            });
-        }
-        
-        // Security: Function to view order details
-        function viewOrderDetails(orderId) {
-            const order = orders.find(o => o.id === orderId);
-            
-            if (!order) {
-                showNotification('Order not found', 'error');
-                return;
-            }
-            
-            currentOrderId = orderId;
-            
-            // Populate modal with order details
-            document.getElementById('modalCustomerName').textContent = order.customer.name;
-            document.getElementById('modalCustomerEmail').textContent = order.customer.email;
-            document.getElementById('modalCustomerPhone').textContent = order.customer.phone;
-            document.getElementById('modalCustomerAltPhone').textContent = order.customer.altPhone || 'N/A';
-            
-            document.getElementById('modalDeliveryAddress').textContent = order.deliveryAddress.address;
-            document.getElementById('modalLandmark').textContent = order.deliveryAddress.landmark;
-            document.getElementById('modalCity').textContent = order.deliveryAddress.city;
-            document.getElementById('modalState').textContent = order.deliveryAddress.state;
-            document.getElementById('modalPinCode').textContent = order.deliveryAddress.pinCode;
-            
-            document.getElementById('modalSubtotal').textContent = `$${order.subtotal.toFixed(2)}`;
-            document.getElementById('modalShipping').textContent = `$${order.shipping.toFixed(2)}`;
-            document.getElementById('modalTax').textContent = `$${order.tax.toFixed(2)}`;
-            document.getElementById('modalTotal').textContent = `$${order.total.toFixed(2)}`;
-            
-            // Populate order items
-            const orderItemsContainer = document.getElementById('modalOrderItems');
-            orderItemsContainer.innerHTML = '';
-            
-            order.items.forEach(item => {
-                const itemElement = document.createElement('div');
-                itemElement.className = 'product-item';
-                itemElement.innerHTML = `
-                    <img src="${item.image}" alt="${item.name}" class="product-image">
-                    <div class="product-info">
-                        <h6>${item.name}</h6>
-                        <div class="product-description">${item.material} | ${item.brand}</div>
-                        <div class="product-attributes">
-                            <div class="product-attribute">
-                                <div class="attribute-label">Size</div>
-                                <div class="attribute-value">${item.size}</div>
-                            </div>
-                            <div class="product-attribute">
-                                <div class="attribute-label">Color</div>
-                                <div class="attribute-value">
-                                    <span class="color-badge" style="background-color: ${item.colorCode};"></span>
-                                    ${item.color}
-                                </div>
-                            </div>
-                            <div class="product-attribute">
-                                <div class="attribute-label">Price</div>
-                                <div class="attribute-value">$${item.price.toFixed(2)}</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="product-total">
-                        <div class="product-price">$${(item.price * item.quantity).toFixed(2)}</div>
-                        <div class="product-quantity">Qty: ${item.quantity}</div>
-                    </div>
-                `;
-                orderItemsContainer.appendChild(itemElement);
-            });
-            
-            // Update fulfill button state
-            const fulfillButton = document.getElementById('modalFulfillButton');
-            if (order.status === 'fulfilled') {
-                fulfillButton.disabled = true;
-                fulfillButton.innerHTML = '<i class="bi bi-check-circle"></i> Already Fulfilled';
-                fulfillButton.classList.remove('btn-success');
-                fulfillButton.classList.add('btn-secondary');
-            } else {
-                fulfillButton.disabled = false;
-                fulfillButton.innerHTML = '<i class="bi bi-check-circle"></i> Mark as Fulfilled';
-                fulfillButton.classList.remove('btn-secondary');
-                fulfillButton.classList.add('btn-success');
-            }
-            
-            // Show modal
-            const modal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
-            modal.show();
-        }
-        
-        // Security: Function to fulfill order from modal
-        function fulfillOrder() {
-            if (!currentOrderId) return;
-            
-            const order = orders.find(o => o.id === currentOrderId);
-            
-            if (!order) {
-                showNotification('Order not found', 'error');
-                return;
-            }
-            
-            // SECURITY: In a real application, this would be a server-side operation with proper validation
-            // For now, we'll just update the local data
-            order.status = 'fulfilled';
-            
-            // Close modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('orderDetailsModal'));
-            modal.hide();
-            
-            // Update UI
-            loadOrderTable();
-            updateStats();
-            
-            showNotification(`Order ${currentOrderId} has been marked as fulfilled`);
-        }
-        
-        // Security: Function to fulfill order directly from table
-        function fulfillOrderDirect(orderId) {
-            const order = orders.find(o => o.id === orderId);
-            
-            if (!order) {
-                showNotification('Order not found', 'error');
-                return;
-            }
-            
-            // SECURITY: In a real application, this would be a server-side operation with proper validation
-            // For now, we'll just update the local data
-            order.status = 'fulfilled';
-            
-            // Update UI
-            loadOrderTable();
-            updateStats();
-            
-            showNotification(`Order ${orderId} has been marked as fulfilled`);
-        }
-        
-        // Security: Function to refresh order list
-        function refreshOrderList() {
-            // SECURITY: In a real application, this would fetch fresh data from the server
-            // For now, we'll just reload the current data
-            loadOrderTable();
-            updateStats();
-            
-            showNotification('Order list refreshed');
-        }
-        
-        // Security: Function to export orders
-        function exportOrders() {
-            // SECURITY: In a real application, this would generate a secure download link
-            // For now, we'll just show a notification
-            showNotification('Export functionality will be implemented with the server');
-        }
-        
-        // Security: Function to show notification
-        function showNotification(message, type = 'success') {
-            const notification = document.getElementById('notification');
-            notification.textContent = message;
-            notification.className = 'notification';
-            
-            if (type === 'error') {
-                notification.classList.add('error');
-            }
-            
-            notification.style.display = 'block';
-            
-            setTimeout(() => {
-                notification.style.display = 'none';
-            }, 3000);
-        }
-        
-        // SECURITY: Initialize the dashboard when the page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check authentication status
-            checkAuthStatus();
-            
-            // SECURITY: Generate a CSRF token for form protection
-            document.getElementById('csrf_token').value = generateCSRFToken();
-        });
-        
-        // SECURITY: Function to generate a simple CSRF token
-        function generateCSRFToken() {
-            return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-        }
-    </script>
+
+    <!-- Your application JS — must be served from the same origin (''self') so CSP allows it -->
+    <script src="dashboard.js"></script>
 </body>
 </html>
