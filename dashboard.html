@@ -306,9 +306,10 @@
 
     <div class="notification" id="notification"></div>
 
+  <!-- Supabase UMD (creates global createClient) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <!-- External JS allowed by CSP because it's 'self' or from whitelisted CDNs -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- Your application JS — must be served from the same origin (''self') so CSP allows it -->
     <script src="dashboard.js"></script>
