@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Order Management - Admin Dashboard</title>
+    <!-- SECURITY: Add Content Security Policy meta tag as fallback -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; 
+                script-src 'self' https://cdn.jsdelivr.net https://cdn.supabase.io; 
+                style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; 
+                font-src 'self' https://cdn.jsdelivr.net; 
+                img-src 'self' data: https:; 
+                connect-src 'self' https://*.supabase.co wss://*.supabase.co;">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
@@ -323,13 +330,38 @@
             line-height: 1.5;
             color: #495057;
         }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        
+        .loading-spinner {
+            width: 3rem;
+            height: 3rem;
+        }
     </style>
 </head>
 <body>
-    <!-- Security: CSRF token included for all forms -->
-    <input type="hidden" id="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+    <!-- Loading overlay for authentication check -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner-border text-primary loading-spinner" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
     
-    <div class="admin-header">
+    <!-- Security: CSRF token included for all forms -->
+    <input type="hidden" id="csrf_token" value="">
+    
+    <div class="admin-header" id="adminHeader" style="display: none;">
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-md-6">
@@ -337,15 +369,15 @@
                 </div>
                 <div class="col-md-6 text-end">
                     <a href="#" class="btn btn-outline-primary">Dashboard</a>
-                    <a href="product-management.html" class="btn btn-outline-secondary">Products</a>
-                    <a href="product-upload.html" class="btn btn-outline-secondary">Upload Product</a>
-                    <a href="#" class="btn btn-outline-danger">Logout</a>
+                    <a href="productlist.html" class="btn btn-outline-secondary">Products</a>
+                    <a href="addproduct.html" class="btn btn-outline-secondary">Upload Product</a>
+                    <button id="logoutButton" class="btn btn-outline-danger">Logout</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="container">
+    <div class="container" id="dashboardContent" style="display: none;">
         <!-- Stats Cards -->
         <div class="stats-container">
             <div class="stat-card">
@@ -558,7 +590,16 @@
     <div class="notification" id="notification"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Supabase Client Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
+        // SECURITY: Initialize Supabase Client with same credentials as login page
+        const SUPABASE_URL = 'https://tfcvfjtounqemishwcop.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmY3ZmanRvdW5xZW1pc2h3Y29wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkwNDI4NjgsImV4cCI6MjA3NDYxODg2OH0.Qso906vE1_1LTIxhrKAswHhNsizquQJ8P7X4ybfaXmM';
+        
+        // Initialize Supabase Client
+        const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
         // Sample order data (in a real application, this would come from the server)
         let orders = [
             {
@@ -753,7 +794,43 @@
         // Current order ID for operations
         let currentOrderId = null;
         
-        document.addEventListener('DOMContentLoaded', function() {
+        // SECURITY: Function to check authentication status
+        async function checkAuthStatus() {
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession();
+                
+                if (error) {
+                    console.error('Auth check error:', error.message);
+                    redirectToLogin();
+                    return;
+                }
+                
+                if (!session) {
+                    console.log('No active session found');
+                    redirectToLogin();
+                    return;
+                }
+                
+                // User is authenticated, show dashboard
+                showDashboard();
+                
+            } catch (err) {
+                console.error('Auth check failed:', err);
+                redirectToLogin();
+            }
+        }
+        
+        // SECURITY: Function to redirect to login page
+        function redirectToLogin() {
+            window.location.href = 'index.html';
+        }
+        
+        // SECURITY: Function to show dashboard content
+        function showDashboard() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+            document.getElementById('adminHeader').style.display = 'block';
+            document.getElementById('dashboardContent').style.display = 'block';
+            
             // Load orders into table
             loadOrderTable();
             updateStats();
@@ -772,9 +849,32 @@
             
             // Setup fulfill button in modal
             document.getElementById('modalFulfillButton').addEventListener('click', fulfillOrder);
-        });
+            
+            // Setup logout button
+            document.getElementById('logoutButton').addEventListener('click', logout);
+        }
         
-        // Security: Function to load orders into the table
+        // SECURITY: Function to handle logout
+        async function logout() {
+            try {
+                const { error } = await supabase.auth.signOut();
+                
+                if (error) {
+                    console.error('Logout error:', error.message);
+                    showNotification('Logout failed: ' + error.message, 'error');
+                    return;
+                }
+                
+                // Redirect to login page after successful logout
+                redirectToLogin();
+                
+            } catch (err) {
+                console.error('Logout failed:', err);
+                showNotification('Logout failed', 'error');
+            }
+        }
+        
+        // SECURITY: Function to load orders into the table
         function loadOrderTable() {
             const tableBody = document.getElementById('ordersTableBody');
             tableBody.innerHTML = '';
@@ -972,30 +1072,34 @@
         // Security: Function to view order details
         function viewOrderDetails(orderId) {
             const order = orders.find(o => o.id === orderId);
+            
             if (!order) {
                 showNotification('Order not found', 'error');
                 return;
             }
             
-            // Set current order ID
             currentOrderId = orderId;
             
-            // Populate customer information
+            // Populate modal with order details
             document.getElementById('modalCustomerName').textContent = order.customer.name;
             document.getElementById('modalCustomerEmail').textContent = order.customer.email;
             document.getElementById('modalCustomerPhone').textContent = order.customer.phone;
             document.getElementById('modalCustomerAltPhone').textContent = order.customer.altPhone || 'N/A';
             
-            // Populate delivery address
             document.getElementById('modalDeliveryAddress').textContent = order.deliveryAddress.address;
-            document.getElementById('modalLandmark').textContent = order.deliveryAddress.landmark || 'N/A';
+            document.getElementById('modalLandmark').textContent = order.deliveryAddress.landmark;
             document.getElementById('modalCity').textContent = order.deliveryAddress.city;
             document.getElementById('modalState').textContent = order.deliveryAddress.state;
             document.getElementById('modalPinCode').textContent = order.deliveryAddress.pinCode;
             
+            document.getElementById('modalSubtotal').textContent = `$${order.subtotal.toFixed(2)}`;
+            document.getElementById('modalShipping').textContent = `$${order.shipping.toFixed(2)}`;
+            document.getElementById('modalTax').textContent = `$${order.tax.toFixed(2)}`;
+            document.getElementById('modalTotal').textContent = `$${order.total.toFixed(2)}`;
+            
             // Populate order items
-            const itemsContainer = document.getElementById('modalOrderItems');
-            itemsContainer.innerHTML = '';
+            const orderItemsContainer = document.getElementById('modalOrderItems');
+            orderItemsContainer.innerHTML = '';
             
             order.items.forEach(item => {
                 const itemElement = document.createElement('div');
@@ -1004,128 +1108,116 @@
                     <img src="${item.image}" alt="${item.name}" class="product-image">
                     <div class="product-info">
                         <h6>${item.name}</h6>
+                        <div class="product-description">${item.material} | ${item.brand}</div>
                         <div class="product-attributes">
                             <div class="product-attribute">
-                                <span class="attribute-label">Color</span>
-                                <span class="attribute-value">
-                                    <span class="color-badge" style="background-color: ${item.colorCode || '#cccccc'}"></span>
-                                    ${item.color || 'N/A'}
-                                </span>
+                                <div class="attribute-label">Size</div>
+                                <div class="attribute-value">${item.size}</div>
                             </div>
                             <div class="product-attribute">
-                                <span class="attribute-label">Size</span>
-                                <span class="attribute-value">${item.size || 'N/A'}</span>
+                                <div class="attribute-label">Color</div>
+                                <div class="attribute-value">
+                                    <span class="color-badge" style="background-color: ${item.colorCode};"></span>
+                                    ${item.color}
+                                </div>
                             </div>
                             <div class="product-attribute">
-                                <span class="attribute-label">Quantity</span>
-                                <span class="attribute-value">${item.quantity}</span>
-                            </div>
-                            <div class="product-attribute">
-                                <span class="attribute-label">Unit Price</span>
-                                <span class="attribute-value product-price">$${item.price.toFixed(2)}</span>
+                                <div class="attribute-label">Price</div>
+                                <div class="attribute-value">$${item.price.toFixed(2)}</div>
                             </div>
                         </div>
                     </div>
                     <div class="product-total">
                         <div class="product-price">$${(item.price * item.quantity).toFixed(2)}</div>
-                        <div class="product-quantity">Total for ${item.quantity} item${item.quantity > 1 ? 's' : ''}</div>
+                        <div class="product-quantity">Qty: ${item.quantity}</div>
                     </div>
                 `;
-                itemsContainer.appendChild(itemElement);
+                orderItemsContainer.appendChild(itemElement);
             });
             
-            // Populate order summary
-            document.getElementById('modalSubtotal').textContent = `$${order.subtotal.toFixed(2)}`;
-            document.getElementById('modalShipping').textContent = `$${order.shipping.toFixed(2)}`;
-            document.getElementById('modalTax').textContent = `$${order.tax.toFixed(2)}`;
-            document.getElementById('modalTotal').textContent = `$${order.total.toFixed(2)}`;
-            
-            // Update fulfill button based on order status
+            // Update fulfill button state
             const fulfillButton = document.getElementById('modalFulfillButton');
             if (order.status === 'fulfilled') {
-                fulfillButton.style.display = 'none';
+                fulfillButton.disabled = true;
+                fulfillButton.innerHTML = '<i class="bi bi-check-circle"></i> Already Fulfilled';
+                fulfillButton.classList.remove('btn-success');
+                fulfillButton.classList.add('btn-secondary');
             } else {
-                fulfillButton.style.display = 'block';
+                fulfillButton.disabled = false;
+                fulfillButton.innerHTML = '<i class="bi bi-check-circle"></i> Mark as Fulfilled';
+                fulfillButton.classList.remove('btn-secondary');
+                fulfillButton.classList.add('btn-success');
             }
             
             // Show modal
-            const orderModal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
-            orderModal.show();
+            const modal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
+            modal.show();
         }
         
         // Security: Function to fulfill order from modal
         function fulfillOrder() {
-            if (!currentOrderId) {
-                showNotification('Invalid order ID', 'error');
-                return;
-            }
+            if (!currentOrderId) return;
             
-            fulfillOrderById(currentOrderId);
-        }
-        
-        // Security: Function to fulfill order directly from table
-        function fulfillOrderDirect(orderId) {
-            fulfillOrderById(orderId);
-        }
-        
-        // Security: Function to fulfill order by ID
-        function fulfillOrderById(orderId) {
-            // Security: In a real application, you would send a request to the server
-            // with proper CSRF token and server-side validation
+            const order = orders.find(o => o.id === currentOrderId);
             
-            // Find order index
-            const orderIndex = orders.findIndex(o => o.id === orderId);
-            if (orderIndex === -1) {
+            if (!order) {
                 showNotification('Order not found', 'error');
                 return;
             }
             
-            // Update order status
-            orders[orderIndex].status = 'fulfilled';
+            // SECURITY: In a real application, this would be a server-side operation with proper validation
+            // For now, we'll just update the local data
+            order.status = 'fulfilled';
             
-            // Close modal if open
-            const orderModal = bootstrap.Modal.getInstance(document.getElementById('orderDetailsModal'));
-            if (orderModal) {
-                orderModal.hide();
-            }
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('orderDetailsModal'));
+            modal.hide();
             
-            // Refresh table and stats
+            // Update UI
             loadOrderTable();
             updateStats();
             
-            // Show success message
-            showNotification('Order marked as fulfilled');
+            showNotification(`Order ${currentOrderId} has been marked as fulfilled`);
+        }
+        
+        // Security: Function to fulfill order directly from table
+        function fulfillOrderDirect(orderId) {
+            const order = orders.find(o => o.id === orderId);
             
-            // Reset current order ID
-            currentOrderId = null;
+            if (!order) {
+                showNotification('Order not found', 'error');
+                return;
+            }
+            
+            // SECURITY: In a real application, this would be a server-side operation with proper validation
+            // For now, we'll just update the local data
+            order.status = 'fulfilled';
+            
+            // Update UI
+            loadOrderTable();
+            updateStats();
+            
+            showNotification(`Order ${orderId} has been marked as fulfilled`);
         }
         
         // Security: Function to refresh order list
         function refreshOrderList() {
-            // Security: In a real application, you would fetch fresh data from the server
-            
-            // Reset filters
-            document.getElementById('searchInput').value = '';
-            document.getElementById('statusFilter').value = '';
-            document.getElementById('dateFilter').value = '';
-            
-            // Reload table
+            // SECURITY: In a real application, this would fetch fresh data from the server
+            // For now, we'll just reload the current data
             loadOrderTable();
             updateStats();
             
-            // Show notification
             showNotification('Order list refreshed');
         }
         
         // Security: Function to export orders
         function exportOrders() {
-            // Security: In a real application, you would generate a CSV or Excel file
-            // with proper sanitization of data
-            
-            showNotification('Orders exported successfully');
+            // SECURITY: In a real application, this would generate a secure download link
+            // For now, we'll just show a notification
+            showNotification('Export functionality will be implemented with the server');
         }
         
-        // Security: Function to show notifications
+        // Security: Function to show notification
         function showNotification(message, type = 'success') {
             const notification = document.getElementById('notification');
             notification.textContent = message;
@@ -1140,6 +1232,20 @@
             setTimeout(() => {
                 notification.style.display = 'none';
             }, 3000);
+        }
+        
+        // SECURITY: Initialize the dashboard when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check authentication status
+            checkAuthStatus();
+            
+            // SECURITY: Generate a CSRF token for form protection
+            document.getElementById('csrf_token').value = generateCSRFToken();
+        });
+        
+        // SECURITY: Function to generate a simple CSRF token
+        function generateCSRFToken() {
+            return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
         }
     </script>
 </body>
