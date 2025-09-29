@@ -1255,18 +1255,25 @@
             }, 3000);
         }
         
+        // SECURITY: Function to generate a simple CSRF token
+        function generateCSRFToken() {
+            return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        }
+
         // SECURITY: Initialize the dashboard when the page loads
-        document.addEventListener('DOMContentLoaded', function() {
+        function initializeDashboard() {
             // Check authentication status
             checkAuthStatus();
             
             // SECURITY: Generate a CSRF token for form protection
             document.getElementById('csrf_token').value = generateCSRFToken();
-        });
-        
-        // SECURITY: Function to generate a simple CSRF token
-        function generateCSRFToken() {
-            return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        }
+
+        // Initialize the dashboard when the page loads
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeDashboard);
+        } else {
+            initializeDashboard();
         }
     </script>
 </body>
